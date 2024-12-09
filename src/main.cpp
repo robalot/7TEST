@@ -53,14 +53,13 @@ void setup(void) {
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     String html = "<html><body><h1>Relay Control</h1>";
     html += "<div style='display: grid; grid-template-rows: repeat(5, 50px); grid-template-columns: repeat(3, 50px); gap: 10px;'>";
-    html += "<button onclick=\"toggleRelay(0)\" style=\"grid-row: 2; grid-column: 1; background-color: " + String(relayStates[0] ? "green" : "red") + ";\">A1</button>";
-    html += "<button onclick=\"toggleRelay(1)\" style=\"grid-row: 1; grid-column: 2; background-color: " + String(relayStates[1] ? "green" : "red") + ";\">A2</button>";
-    html += "<button onclick=\"toggleRelay(2)\" style=\"grid-row: 2; grid-column: 3; background-color: " + String(relayStates[2] ? "green" : "red") + ";\">A3</button>";
-    html += "<button onclick=\"toggleRelay(3)\" style=\"grid-row: 4; grid-column: 3; background-color: " + String(relayStates[3] ? "green" : "red") + ";\">A4</button>";
-    html += "<button onclick=\"toggleRelay(4)\" style=\"grid-row: 5; grid-column: 2; background-color: " + String(relayStates[4] ? "green" : "red") + ";\">A5</button>";
-    html += "<button onclick=\"toggleRelay(5)\" style=\"grid-row: 4; grid-column: 1; background-color: " + String(relayStates[5] ? "green" : "red") + ";\">A6</button>";
+    html += "<button onclick=\"toggleRelay(3)\" style=\"grid-row: 2; grid-column: 1; background-color: " + String(relayStates[3] ? "green" : "red") + ";\">A1</button>";
+    html += "<button onclick=\"toggleRelay(4)\" style=\"grid-row: 1; grid-column: 2; background-color: " + String(relayStates[4] ? "green" : "red") + ";\">A2</button>";
+    html += "<button onclick=\"toggleRelay(5)\" style=\"grid-row: 2; grid-column: 3; background-color: " + String(relayStates[5] ? "green" : "red") + ";\">A3</button>";
+    html += "<button onclick=\"toggleRelay(0)\" style=\"grid-row: 4; grid-column: 3; background-color: " + String(relayStates[0] ? "green" : "red") + ";\">A4</button>";
+    html += "<button onclick=\"toggleRelay(1)\" style=\"grid-row: 5; grid-column: 2; background-color: " + String(relayStates[1] ? "green" : "red") + ";\">A5</button>";
+    html += "<button onclick=\"toggleRelay(2)\" style=\"grid-row: 4; grid-column: 1; background-color: " + String(relayStates[2] ? "green" : "red") + ";\">A6</button>";
     html += "<button onclick=\"toggleRelay(6)\" style=\"grid-row: 3; grid-column: 2; background-color: " + String(relayStates[6] ? "green" : "red") + ";\">A7</button>";
-   
     html += "</div>";
     html += "<script>function toggleRelay(relay) { fetch('/toggle?relay=' + relay).then(response => response.text()).then(data => { location.reload(); }); }</script>";
     html += "</body></html>";
