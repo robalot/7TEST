@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "../7segclock/otafin"
+		},
+		{
+			"name": "7segrelay",
+			"path": ".."
+		}
+	],
+	"settings": {}
+}
