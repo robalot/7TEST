@@ -69,7 +69,7 @@ void setup() {
   }
 
   // Initialize MCP23X17
-  if (!mcp.begin_I2C()) { // Default address 0x20
+  if (!mcp.begin_I2C()) { // Default address 0x27
     Serial.println("Error: MCP23X17 not found!");
   } else {
     mcpConnected = true;
