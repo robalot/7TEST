@@ -3,6 +3,8 @@
 #include <Adafruit_MCP23X17.h>
 #include <ElegantOTA.h>
 #include <elop.h>
+#include <WiFiUdp.h>
+#include <NTPClient.h>
 
 #define ESP32
 
@@ -22,6 +24,9 @@ const char* password = "RKKT1999!1988$";
 AsyncWebServer server(80);
 
 unsigned long ota_progress_millis = 0;
+
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "pool.ntp.org", 0, 60000); // Update every 60 seconds
 
 void onOTAStart();
 void onOTAProgress(size_t current, size_t final);
@@ -69,7 +74,7 @@ void setup() {
   }
 
   // Initialize MCP23X17
-  if (!mcp.begin_I2C()) { // Default address 0x27
+  if (!mcp.begin_I2C()) { // Default address 0x20
     Serial.println("Error: MCP23X17 not found!");
   } else {
     mcpConnected = true;
@@ -80,13 +85,20 @@ void setup() {
   if (mcpConnected) {
     for (int i = 0; i < sizeof(mcpRelayPins) / sizeof(mcpRelayPins[0]); i++) {
       mcp.pinMode(mcpRelayPins[i], OUTPUT);
-      mcp.digitalWrite(mcpRelayPins[i], LOW); // Set all relays to off initially
+      mcp.digitalWrite(mcpRelayPins[i], HIGH); // Set all relays to on initially
     }
   }
 
+  // Initialize NTP client
+  timeClient.begin();
+
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+    timeClient.update();
+    String formattedTime = timeClient.getFormattedTime();
+    String timeWithoutSeconds = formattedTime.substring(0, 5); // Get HH:MM part of the time
     String html = "<html><body><h1>Relay Control</h1>";
     html += "<p>MCP23X17 Connection: " + String(mcpConnected ? "Successful" : "Failed") + "</p>";
+    html += "<p>Current Time: " + timeWithoutSeconds + "</p>";
     html += "<div style='display: grid; grid-template-rows: repeat(8, 50px); grid-template-columns: repeat(3, 50px); gap: 10px;'>";
     for (int i = 0; i < 8; i++) {
       html += "<button onclick=\"toggleRelay(" + String(i) + ")\" style=\"grid-row: " + String(i + 1) + "; grid-column: 1; background-color: " + String(relayStates[i] ? "green" : "red") + ";\">A" + String(i + 1) + "</button>";
@@ -111,7 +123,7 @@ void setup() {
         digitalWrite(relayPins[relay], relayStates[relay] ? HIGH : LOW);
       } else if (relay >= 8 && relay < 24) {
         relayStates[relay] = !relayStates[relay];
-        mcp.digitalWrite(mcpRelayPins[relay - 8], relayStates[relay] ? HIGH : LOW);
+        mcp.digitalWrite(mcpRelayPins[relay - 8], relayStates[relay] ? LOW : HIGH); // Swapped HIGH and LOW
       }
     }
     request->send(200, "text/plain", "OK");
@@ -129,6 +141,7 @@ void setup() {
 
 void loop(void) {
   ElegantOTA.loop();
+  timeClient.update();
   // Add code to control relays here if needed
 
   // Cycle pins once on startup
@@ -139,6 +152,17 @@ void loop(void) {
 }
 
 void cyclePins() {
+  // Save current states
+  bool currentRelayStates[24];
+  for (int i = 0; i < 8; i++) {
+    currentRelayStates[i] = digitalRead(relayPins[i]);
+  }
+  if (mcpConnected) {
+    for (int i = 0; i < 16; i++) {
+      currentRelayStates[i + 8] = mcp.digitalRead(mcpRelayPins[i]);
+    }
+  }
+
   // Cycle each pin on the microcontroller
   for (const int& pin : relayPins) {
     digitalWrite(pin, HIGH);
@@ -149,9 +173,19 @@ void cyclePins() {
   // Cycle each pin on the MCP23X17
   if (mcpConnected) {
     for (int i = 0; i < sizeof(mcpRelayPins) / sizeof(mcpRelayPins[0]); i++) {
-      mcp.digitalWrite(mcpRelayPins[i], HIGH);
-      delay(1000);
       mcp.digitalWrite(mcpRelayPins[i], LOW);
+      delay(1000);
+      mcp.digitalWrite(mcpRelayPins[i], HIGH);
+    }
+  }
+
+  // Restore previous states
+  for (int i = 0; i < 8; i++) {
+    digitalWrite(relayPins[i], currentRelayStates[i]);
+  }
+  if (mcpConnected) {
+    for (int i = 0; i < 16; i++) {
+      mcp.digitalWrite(mcpRelayPins[i], currentRelayStates[i + 8]);
     }
   }
 }
