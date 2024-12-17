@@ -47,6 +47,12 @@ const int mcpRelayPins[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 
 bool mcpConnected = false;
 bool cycleCompleted = false;
 
+// Separate variables for each digit in the time
+int hourTens = 0;
+int hourUnits = 0;
+int minuteTens = 0;
+int minuteUnits = 0;
+
 String generateHTML();
 
 void cyclePins();
@@ -55,6 +61,28 @@ void setup() {
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("WiFi connected");
+
+  timeClient.begin();
+  timeClient.update();
+
+ // Extract digits for hours and minutes
+  int hours = timeClient.getHours();
+  int minutes = timeClient.getMinutes();
+
+  hourTens = hours / 10;
+  hourUnits = hours % 10;
+  minuteTens = minutes / 10;
+  minuteUnits = minutes % 10;
+
+  Serial.printf("Current time: %d%d:%d%d\n", hourTens, hourUnits, minuteTens, minuteUnits);
+
+  
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -99,6 +127,14 @@ void setup() {
     String html = "<html><body><h1>Relay Control</h1>";
     html += "<p>MCP23X17 Connection: " + String(mcpConnected ? "Successful" : "Failed") + "</p>";
     html += "<p>Current Time: " + timeWithoutSeconds + "</p>";
+    html += "<h2>Current Time: ";
+    html += String(hourTens) + String(hourUnits) + ":" + String(minuteTens) + String(minuteUnits);
+    html += "</h2>";
+    html += "<h3>Hour Tens: " + String(hourTens) + "</h3>";
+    html += "<h3>Hour Units: " + String(hourUnits) + "</h3>";
+    html += "<h3>Minute Tens: " + String(minuteTens) + "</h3>";
+    html += "<h3>Minute Units: " + String(minuteUnits) + "</h3>";
+    html += "</body></html>";
     html += "<div style='display: grid; grid-template-rows: repeat(8, 50px); grid-template-columns: repeat(3, 50px); gap: 10px;'>";
     for (int i = 0; i < 8; i++) {
       html += "<button onclick=\"toggleRelay(" + String(i) + ")\" style=\"grid-row: " + String(i + 1) + "; grid-column: 1; background-color: " + String(relayStates[i] ? "green" : "red") + ";\">A" + String(i + 1) + "</button>";
@@ -189,6 +225,10 @@ void cyclePins() {
     }
   }
 }
+
+
+
+
 
 void onOTAStart() {
   // Log when OTA has started
